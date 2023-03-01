@@ -20,8 +20,7 @@ struct list_head *q_new()
         return NULL;
     }
 
-    new->next = new;
-    new->prev = new;
+    INIT_LIST_HEAD(new);
     return new;
 }
 
@@ -32,12 +31,17 @@ void q_free(struct list_head *l)
         return;
     }
 
-    l->prev->next = NULL;
-    while (l) {
-        struct list_head *tmp = l;
-        l = l->next;
-        free(tmp);
+    element_t *entry, *safe;
+    list_for_each_entry_safe (entry, safe, l, list) {
+        if (entry->value) {  // I think this is imperative, but no one mentioned
+                             // it.
+            free(entry->value);
+        }
+        list_del(&entry->list);  // can call q_release_element() directly, but
+                                 // including list_del would be fine
+        q_release_element(entry);
     }
+    free(l);
 }
 
 /* Insert an element at head of queue */
