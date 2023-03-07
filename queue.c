@@ -243,13 +243,31 @@ void q_sort(struct list_head *head)
  * the right side of it */
 int q_descend(struct list_head *head)
 {
+    if (!head || list_empty(head))
+        return 0;
+
+    int len = 0;
+    element_t *last = list_entry(head->prev, element_t, list);
     // https://leetcode.com/problems/remove-nodes-from-linked-list/
-    return 0;
+    for (element_t *curr = list_entry(head->prev, element_t, list),
+                   *safe = list_entry(curr->list.prev, element_t, list);
+         &curr->list != (head);
+         curr = safe, safe = list_entry(safe->list.prev, element_t, list)) {
+        if (strcmp(curr->value, last->value) < 0) {
+            list_del(&curr->list);
+            q_release_element(curr);
+        } else {
+            last = curr;
+            len++;
+        }
+    }
+    return len;
 }
 
 /* Merge all the queues into one sorted queue, which is in ascending order */
 int q_merge(struct list_head *head)
 {
     // https://leetcode.com/problems/merge-k-sorted-lists/
+
     return 0;
 }
