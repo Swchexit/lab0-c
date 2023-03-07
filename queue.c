@@ -235,6 +235,13 @@ void q_reverseK(struct list_head *head, int k)
 /* Utility functions for q_sort, implementing mergesort */
 struct list_head *merge_two_list(struct list_head *l1, struct list_head *l2)
 {
+    if (!l1 && !l2)
+        return NULL;
+    else if (!l1)
+        return l2;
+    else if (!l2)
+        return l1;
+
     struct list_head *head, *ptr;
     if (strcmp(list_entry(l1, element_t, list)->value,
                list_entry(l2, element_t, list)->value) < 0) {
@@ -289,7 +296,7 @@ void mergeSort(struct list_head **head)
 
     mergeSort(head);
     mergeSort(&slow);
-    *head = merge_two_list(head, &slow);
+    *head = merge_two_list(*head, slow);
 }
 
 /* Sort elements of queue in ascending order */
@@ -332,7 +339,37 @@ int q_descend(struct list_head *head)
 /* Merge all the queues into one sorted queue, which is in ascending order */
 int q_merge(struct list_head *head)
 {
+    if (!head)
+        return 0;
+    if (list_is_singular(head))
+        return list_entry(head, queue_contex_t, chain)->size;
     // https://leetcode.com/problems/merge-k-sorted-lists/
 
-    return 0;
+
+    queue_contex_t *first = list_entry(head->next, queue_contex_t, chain);
+    int len = first->size;
+    for (struct list_head *cur = head->next->next; cur != head;
+         cur = cur->next) {
+        queue_contex_t *curr = list_entry(cur, queue_contex_t, chain);
+        if (list_empty(curr->q))
+            continue;
+        curr->q->prev->next = NULL;  // break the circular structure for merging
+        first->q->next = merge_two_list(first->q->next, curr->q->next);
+        len += curr->size;
+        curr->q = NULL;
+        curr->size = 0;
+    }
+
+    // now first->q is a linked-list (not circular), so we have to reconnect it.
+    struct list_head *tail = first->q->next;
+    while (tail->next) {
+        tail = tail->next;
+    }
+
+    tail->next = first->q;
+    first->q->prev = tail;
+    first->size = len;
+
+    // queue_contex_t *q_head = list_first_entry(head, queue_contex_t, chain);
+    return len;
 }
