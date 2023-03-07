@@ -232,11 +232,76 @@ void q_reverseK(struct list_head *head, int k)
     }
 }
 
+/* Utility functions for q_sort, implementing mergesort */
+struct list_head *merge_two_list(struct list_head *l1, struct list_head *l2)
+{
+    struct list_head *head, *ptr;
+    if (strcmp(list_entry(l1, element_t, list)->value,
+               list_entry(l2, element_t, list)->value) < 0) {
+        head = l1;
+        l1 = l1->next;
+    } else {
+        head = l2;
+        l2 = l2->next;
+    }
+    ptr = head;
+
+    while (l1 && l2) {
+        if (strcmp(list_entry(l1, element_t, list)->value,
+                   list_entry(l2, element_t, list)->value) < 0) {
+            ptr->next = l1;
+            l1->prev = ptr;
+            l1 = l1->next;
+        } else {
+            ptr->next = l2;
+            l2->prev = ptr;
+            l2 = l2->next;
+        }
+        ptr = ptr->next;
+    }
+
+    while (l1) {
+        ptr->next = l1;
+        l1->prev = ptr;
+        ptr = ptr->next;
+        l1 = l1->next;
+    }
+    while (l2) {
+        ptr->next = l2;
+        l2->prev = ptr;
+        ptr = ptr->next;
+        l2 = l2->next;
+    }
+    head->prev = ptr;
+    return head;
+}
+
+void mergeSort(struct list_head **head)
+{
+    if (list_is_singular(*head))
+        return;
+    struct list_head *fast = *head, *slow = *head;
+    while (fast && fast->next) {
+        slow = slow->next;
+        fast = fast->next->next;
+    }
+    slow->prev->next = NULL;
+
+    mergeSort(head);
+    mergeSort(&slow);
+    *head = merge_two_list(head, &slow);
+}
+
 /* Sort elements of queue in ascending order */
 void q_sort(struct list_head *head)
 {
     if (!head || list_empty(head) || list_is_singular(head))
         return;
+    head->prev->next = NULL;
+    mergeSort(&head->next);
+    head->next->prev->next = head;
+    head->next->prev = head;
+    head->prev = head->next->prev;
 }
 
 /* Remove every node which has a node with a strictly greater value anywhere to
