@@ -33,10 +33,6 @@ void q_free(struct list_head *l)
 
     element_t *entry, *safe;
     list_for_each_entry_safe (entry, safe, l, list) {
-        if (entry->value) {  // I think this is imperative, but no one mentioned
-                             // it.
-            free(entry->value);
-        }
         list_del(&entry->list);  // can call q_release_element() directly, but
                                  // including list_del would be fine
         q_release_element(entry);
