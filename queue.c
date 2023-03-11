@@ -263,36 +263,32 @@ struct list_head *merge_two_list(struct list_head *l1, struct list_head *l2)
         ptr = ptr->next;
     }
 
-    while (l1) {
+    if (l1) {
         ptr->next = l1;
         l1->prev = ptr;
-        ptr = ptr->next;
-        l1 = l1->next;
     }
-    while (l2) {
+    if (l2) {
         ptr->next = l2;
         l2->prev = ptr;
-        ptr = ptr->next;
-        l2 = l2->next;
     }
+
+    while (ptr->next)
+        ptr = ptr->next;
     head->prev = ptr;
     return head;
 }
 
-void mergeSort(struct list_head **head)
+struct list_head *mergeSort(struct list_head *head)
 {
-    if (list_is_singular(*head))
-        return;
-    struct list_head *fast = *head, *slow = *head;
+    if (!head->next)
+        return head;
+    struct list_head *fast = head, *slow = head;
     while (fast && fast->next) {
         slow = slow->next;
         fast = fast->next->next;
     }
     slow->prev->next = NULL;
-
-    mergeSort(head);
-    mergeSort(&slow);
-    *head = merge_two_list(*head, slow);
+    return merge_two_list(mergeSort(head), mergeSort(slow));
 }
 
 /* Sort elements of queue in ascending order */
@@ -301,10 +297,10 @@ void q_sort(struct list_head *head)
     if (!head || list_empty(head) || list_is_singular(head))
         return;
     head->prev->next = NULL;
-    mergeSort(&head->next);
+    head->next = mergeSort(head->next);
     head->next->prev->next = head;
-    head->next->prev = head;
     head->prev = head->next->prev;
+    head->next->prev = head;
 }
 
 /* Remove every node which has a node with a strictly greater value anywhere to
@@ -335,37 +331,55 @@ int q_descend(struct list_head *head)
 /* Merge all the queues into one sorted queue, which is in ascending order */
 int q_merge(struct list_head *head)
 {
-    if (!head)
+    // if (!head)
+    //     return 0;
+    // if (list_is_singular(head))
+    //     return list_entry(head, queue_contex_t, chain)->size;
+    // // https://leetcode.com/problems/merge-k-sorted-lists/
+
+
+    // queue_contex_t *first = list_entry(head->next, queue_contex_t, chain);
+    // if (!list_empty(first->q))
+    //     first->q->prev->next = NULL;
+    // fprintf(stderr, "%d\n", q_size(first->q));
+    // int len = first->size;
+    // for (struct list_head *cur = head->next->next; cur != head;
+    //      cur = cur->next) {
+    //     queue_contex_t *curr = list_entry(cur, queue_contex_t, chain);
+    //     if (list_empty(curr->q)) {
+    //         continue;
+    //     }
+    //     fprintf(stderr, "%p %p\n", first->q, first->q->next);
+    //     curr->q->prev->next = NULL;  // break the circular structure for
+    //     merging first->q->next = merge_two_list(first->q->next,
+    //     curr->q->next); len += curr->size; curr->q = NULL; curr->size = 0;
+    // }
+    // // now first->q is a linked-list (not circular), so we have to reconnect
+    // it. struct list_head *tail = first->q->next; while (tail->next) {
+    //     tail = tail->next;
+    // }
+
+    // tail->next = first->q;
+    // first->q->prev = tail;
+    // first->size = len;
+
+    // // queue_contex_t *q_head = list_first_entry(head, queue_contex_t,
+    // chain); return len;
+
+    if (!head || list_empty(head))
         return 0;
+
+    queue_contex_t *q1 = container_of(head->next, queue_contex_t, chain);
     if (list_is_singular(head))
-        return list_entry(head, queue_contex_t, chain)->size;
-    // https://leetcode.com/problems/merge-k-sorted-lists/
-
-
-    queue_contex_t *first = list_entry(head->next, queue_contex_t, chain);
-    int len = first->size;
+        return q1->size;
     for (struct list_head *cur = head->next->next; cur != head;
          cur = cur->next) {
-        queue_contex_t *curr = list_entry(cur, queue_contex_t, chain);
-        if (list_empty(curr->q))
-            continue;
-        curr->q->prev->next = NULL;  // break the circular structure for merging
-        first->q->next = merge_two_list(first->q->next, curr->q->next);
-        len += curr->size;
-        curr->q = NULL;
-        curr->size = 0;
+        queue_contex_t *q = container_of(cur, queue_contex_t, chain);
+        list_splice_init(q->q, q1->q);
+        q->size = 0;
     }
+    q_sort(q1->q);
+    q1->size = q_size(q1->q);
 
-    // now first->q is a linked-list (not circular), so we have to reconnect it.
-    struct list_head *tail = first->q->next;
-    while (tail->next) {
-        tail = tail->next;
-    }
-
-    tail->next = first->q;
-    first->q->prev = tail;
-    first->size = len;
-
-    // queue_contex_t *q_head = list_first_entry(head, queue_contex_t, chain);
-    return len;
+    return q1->size;
 }
